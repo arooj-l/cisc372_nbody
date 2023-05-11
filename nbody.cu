@@ -8,7 +8,7 @@
 #include "compute.h"
 #include <cuda.h>
 
-
+#define BLOCKSIZE 256
 
 __device__ void computeAcceleration(const vector3* __restrict__ pos, const double* __restrict__ mass,  vector3* __restrict__ accels);
 
@@ -136,7 +136,7 @@ int main(int argc, char **argv)
 	//perform N-body simulation for the specified duration and interval
     for (t_now = 0; t_now < DURATION; t_now += INTERVAL)
     {
-        compute<<<numBLOCKS, BLOCKSIZE>>>(d_hPos, d_hVel, mass);
+        compute<<<numBlocks, BLOCKSIZE>>>(d_hPos, d_hVel, mass);
         cudaDeviceSynchronize();
 	}
 
