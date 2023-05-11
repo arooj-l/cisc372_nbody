@@ -1,12 +1,19 @@
-FLAGS= -DDEBUG
-LIBS= -lm
-ALWAYS_REBUILD=makefile
+CC = nvcc
+CFLAGS = -O3 -arch=sm_35
+LIBS = -lm
 
-nbody: nbody.o compute.o
-	gcc $(FLAGS) $^ -o $@ $(LIBS)
-nbody.o: nbody.c planets.h config.h vector.h $(ALWAYS_REBUILD)
-	gcc $(FLAGS) -c $< 
-compute.o: compute.c config.h vector.h $(ALWAYS_REBUILD)
-	gcc $(FLAGS) -c $< 
+SRCS = body.cu compute.cu
+OBJS = $(SRCS:.cu=.o)
+
+.PHONY: all clean
+
+all: nbody
+
+nbody: $(OBJS)
+	$(CC) $(CFLAGS) $^ -o $@ $(LIBS)
+
+%.o: %.cu compute.h config.h planets.h vector.h
+	$(CC) $(CFLAGS) -c $<
+
 clean:
-	rm -f *.o nbody 
+	rm -f $(OBJS) nbody

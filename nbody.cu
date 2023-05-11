@@ -6,11 +6,19 @@
 #include "config.h"
 #include "planets.h"
 #include "compute.h"
+#include <cuda.h>
 
+
+
+__device__ void computeAcceleration(const vector3* __restrict__ pos, const double* __restrict__ mass,  vector3* __restrict__ accels);
+
+__global__ void compute(vector3* __restrict__ pos,  vector3* __restrict__ vel,const double* __restrict__ mass);
+/*
 // represents the objects in the system.  Global variables
 vector3 *hVel, *d_hVel;
 vector3 *hPos, *d_hPos;
 double *mass;
+*/
 
 //initHostMemory: Create storage for numObjects entities in our system
 //Parameters: numObjects: number of objects to allocate
@@ -95,16 +103,62 @@ int main(int argc, char **argv)
 	int t_now;
 	//srand(time(NULL));
 	srand(1234);
+
+    // Allocate and initialize memory on the host
+    vector3* hPos = new vector3[NUMENTITIES];
+    vector3* hVel = new vector3[NUMENTITIES];
+    double* hMass = new double[NUMENTITIES];
 	initHostMemory(NUMENTITIES);
+
+    // Copy data from host to device
+    vector3* dPos;
+    vector3* dVel;
+    double* dMass;
 	planetFill();
 	randomFill(NUMPLANETS + 1, NUMASTEROIDS);
 	//now we have a system.
 	#ifdef DEBUG
 	printSystem(stdout);
 	#endif
+	//allocate device memory for position and velocity arrays
+    cudaMalloc((void **)&d_hPos, sizeof(vector3) * NUMENTITIES);
+    cudaMalloc((void **)&d_hVel, sizeof(vector3) * NUMENTITIES);
+	cudaMalloc((void**)&d_mass, sizeof(double) * NUMENTITIES);
+
+    //copy initial positions and velocities, mass from host to device
+    cudaMemcpy(d_hPos, hPos, sizeof(vector3) * NUMENTITIES, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_hVel, hVel, sizeof(vector3) * NUMENTITIES, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_mass, mass, sizeof(double) * NUMENTITIES, cudaMemcpyHostToDevice);
+    
+	// Set up the execution configuration
+    int numBlocks = (NUMENTITIES + BLOCKSIZE - 1) / BLOCKSIZE;
+	
+	//perform N-body simulation for the specified duration and interval
+    for (t_now = 0; t_now < DURATION; t_now += INTERVAL)
+    {
+        compute<<<numBLOCKS, BLOCKSIZE>>>(d_hPos, d_hVel, mass);
+        cudaDeviceSynchronize();
+	}
+
+    // Copy final positions and velocities from device to host
+    cudaMemcpy(hPos, d_hPos, sizeof(vector3) * NUMENTITIES, cudaMemcpyDeviceToHost);
+    cudaMemcpy(hVel, d_hVel, sizeof(vector3) * NUMENTITIES, cudaMemcpyDeviceToHost);
+
+	// Clean up memory on the host
+    delete[] hPos;
+    delete[] hVel;
+    delete[] hMass;
+/*
+   //clean up memory on the host
+    cudaFree(d_hPos);
+    cudaFree(d_hVel);
+	cudaFree(d_mass);
+*/
+	/*
 	for (t_now=0;t_now<DURATION;t_now+=INTERVAL){
 		compute();
 	}
+	*/
 	clock_t t1=clock()-t0;
 #ifdef DEBUG
 	printSystem(stdout);
@@ -112,4 +166,7 @@ int main(int argc, char **argv)
 	printf("This took a total time of %f seconds\n",(double)t1/CLOCKS_PER_SEC);
 
 	freeHostMemory();
+
+	return 0; 
+
 }
