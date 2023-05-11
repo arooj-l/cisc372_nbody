@@ -123,7 +123,7 @@ int main(int argc, char **argv)
 	//allocate device memory for position and velocity arrays
     cudaMalloc((void **)&d_hPos, sizeof(vector3) * NUMENTITIES);
     cudaMalloc((void **)&d_hVel, sizeof(vector3) * NUMENTITIES);
-	cudaMalloc((void**)&d_mass, sizeof(double) * NUMENTITIES);
+    cudaMalloc((void**)&d_mass, sizeof(double) * NUMENTITIES);
 
     //copy initial positions and velocities, mass from host to device
     cudaMemcpy(d_hPos, hPos, sizeof(vector3) * NUMENTITIES, cudaMemcpyHostToDevice);
@@ -136,7 +136,7 @@ int main(int argc, char **argv)
 	//perform N-body simulation for the specified duration and interval
     for (t_now = 0; t_now < DURATION; t_now += INTERVAL)
     {
-        compute<<<numBlocks, BLOCKSIZE>>>(d_hPos, d_hVel, mass);
+        compute<<<numBlocks, BLOCKSIZE>>>(d_hPos, d_hVel, d_mass);
         cudaDeviceSynchronize();
 	}
 
@@ -152,7 +152,7 @@ int main(int argc, char **argv)
    //clean up memory on the host
     cudaFree(d_hPos);
     cudaFree(d_hVel);
-	cudaFree(d_mass);
+    cudaFree(d_mass);
 */
 	/*
 	for (t_now=0;t_now<DURATION;t_now+=INTERVAL){
