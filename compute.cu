@@ -13,14 +13,13 @@
 // Device function, to compute the pairwise acceleration between objects
 __device__ void computeAcceleration(const vector3* __restrict__ pos, const double* __restrict__ mass,  vector3* __restrict__ accels)
 {
-    // Compute the thread ID
+  
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Check if the thread ID is within the valid range of entities
+   
     if (tid >= NUMENTITIES)
         return;
 
-    // Compute the pairwise accelerations between objects
     for (int i = 0; i < NUMENTITIES; i++)
     {
         if (i == tid)
@@ -50,25 +49,25 @@ __device__ void computeAcceleration(const vector3* __restrict__ pos, const doubl
 // Kernel function
 __global__ void compute(vector3* __restrict__ pos, vector3* __restrict__ vel, const double* __restrict__ mass)
 {
-    //Compute the thread ID
+    
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
 
-    // Check if the thread ID is within the valid range of entities
+   
     if (tid >= NUMENTITIES)
         return;
 
-    // Declare an array to store the accelerations for each entity
+
     vector3 accels[NUMENTITIES];
 
-    // Compute the acceleration for each entity
+   
     computeAcceleration(pos, mass, accels);
 
-    // Retrieve the acceleration values for the current entity
+    
     double ax = accels[tid][0];
     double ay = accels[tid][1];
     double az = accels[tid][2];
 
-    // Update the velocity and position of the current entity
+   
     vel[tid][0] += ax * INTERVAL;
     vel[tid][1] += ay * INTERVAL;
     vel[tid][2] += az * INTERVAL;
